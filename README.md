@@ -16,3 +16,20 @@ Backend Repository: (https://github.com/MateoSmicht/tienda-virtual-backend)
 * **Autenticación Segura:** Manejo de sesiones de usuario mediante **JSON Web Tokens (JWT)** almacenados de forma segura en el cliente.
 * **Carrito de Compras:** Lógica de agregado, eliminación y cálculo total de productos.
 * **Integración de Pagos:** Conexión con la pasarela de **Mercado Pago** para finalizar las transacciones de forma segura.
+## 🛠️ Instalación y Ejecución Local
+
+1. Clonar el repositorio:
+        ```bash
+        git clone [https://github.com/MateoSmicht/tienda-virtual-frontend.git](https://github.com/MateoSmicht/tienda-virtual-frontend.git)
+
+2. Instalar las dependencias:
+        ```bash
+        npm install
+
+3. Iniciar el servidor de desarrollo:
+
+        ```bash
+        npm run dev
+        (La aplicación se ejecutará por defecto en http://localhost:5173 o el puerto que asigne Vite/React).
+
+Desarrollado por Mateo Smicht
