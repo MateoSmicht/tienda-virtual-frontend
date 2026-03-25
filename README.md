@@ -1,16 +1,24 @@
-# React + Vite
+# 🛒 Tienda Virtual (E-commerce) - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este repositorio contiene la interfaz de usuario (SPA) para el proyecto **Tienda Virtual Full Stack**. Está construida con React y diseñada para consumir una API REST desarrollada en Spring Boot, gestionando la autenticación de usuarios, el catálogo de productos y el flujo de compras.
 
-Currently, two official plugins are available:
+Backend Repository: [Enlace a tu repositorio del backend acá]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tecnologías Utilizadas
+* **Librería principal:** React (JavaScript)
+* **Estilos:** CSS puro / [Si usaste Bootstrap o Tailwind, ponelo acá]
+* **Ruteo:** React Router DOM (Navegación sin recargar la página)
+* **Peticiones HTTP:** Fetch API / Axios
+* **Gestión de Estado:** Hooks (useState, useEffect, useContext)
 
-## React Compiler
+## ✨ Características Principales
+* **Catálogo Dinámico:** Visualización de productos traídos en tiempo real desde la base de datos MySQL.
+* **Autenticación Segura:** Manejo de sesiones de usuario mediante **JSON Web Tokens (JWT)** almacenados de forma segura en el cliente.
+* **Carrito de Compras:** Lógica de agregado, eliminación y cálculo total de productos.
+* **Integración de Pagos:** Conexión con la pasarela de **Mercado Pago** para finalizar las transacciones de forma segura.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Instalación y Ejecución Local
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Clonar el repositorio:
+   ```bash
+   git clone [https://github.com/MateoSmicht/tienda-virtual-frontend.git](https://github.com/MateoSmicht/tienda-virtual-frontend.git)
