@@ -2,7 +2,7 @@
 
 Este repositorio contiene la interfaz de usuario (SPA) para el proyecto **Tienda Virtual Full Stack**. Está construida con React y diseñada para consumir una API REST desarrollada en Spring Boot, gestionando la autenticación de usuarios, el catálogo de productos y el flujo de compras.
 
-Backend Repository: [Enlace a tu repositorio del backend acá]
+Backend Repository: (https://github.com/MateoSmicht/tienda-virtual-backend)
 
 ## 🚀 Tecnologías Utilizadas
 * **Librería principal:** React (JavaScript)
@@ -16,9 +16,3 @@ Backend Repository: [Enlace a tu repositorio del backend acá]
 * **Autenticación Segura:** Manejo de sesiones de usuario mediante **JSON Web Tokens (JWT)** almacenados de forma segura en el cliente.
 * **Carrito de Compras:** Lógica de agregado, eliminación y cálculo total de productos.
 * **Integración de Pagos:** Conexión con la pasarela de **Mercado Pago** para finalizar las transacciones de forma segura.
-
-## 🛠️ Instalación y Ejecución Local
-
-1. Clonar el repositorio:
-   ```bash
-   git clone [https://github.com/MateoSmicht/tienda-virtual-frontend.git](https://github.com/MateoSmicht/tienda-virtual-frontend.git)
