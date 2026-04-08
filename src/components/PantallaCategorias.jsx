@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { fetchConToken } from '../services/api'; 
+import { fetchConToken } from '../services/api';
 
 const PantallaCategorias = () => {
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
   
-  const [categoriaActual, setCategoriaActual] = useState({ id: null, nombre: '' });
+  // 1. Agregamos el campo "icono" al estado inicial
+  const [categoriaActual, setCategoriaActual] = useState({ id: null, nombre: '', icono: '' });
   const [modoEdicion, setModoEdicion] = useState(false);
   
   const [nuevaSubcategoria, setNuevaSubcategoria] = useState('');
@@ -37,11 +38,15 @@ const PantallaCategorias = () => {
     try {
       const response = await fetchConToken(url, {
         method: metodo,
-        body: JSON.stringify({ nombre: categoriaActual.nombre })
+        // 2. Enviamos también el icono al backend (si está vacío manda null o string vacío)
+        body: JSON.stringify({ 
+            nombre: categoriaActual.nombre,
+            icono: categoriaActual.icono || 'category' // Valor por defecto si lo dejan vacío
+        })
       });
 
       if (response.ok) {
-        setCategoriaActual({ id: null, nombre: '' });
+        setCategoriaActual({ id: null, nombre: '', icono: '' });
         setModoEdicion(false);
         cargarCategorias();
       } else {
@@ -53,14 +58,15 @@ const PantallaCategorias = () => {
   };
 
   const iniciarEdicion = (cat) => {
-    setCategoriaActual({ id: cat.id, nombre: cat.nombre });
+    // 3. Cargamos el icono cuando se edita
+    setCategoriaActual({ id: cat.id, nombre: cat.nombre, icono: cat.icono || '' });
     setModoEdicion(true);
     setNuevaSubcategoria(''); 
     document.getElementById('input-nombre-cat')?.focus();
   };
 
   const cancelarEdicion = () => {
-    setCategoriaActual({ id: null, nombre: '' });
+    setCategoriaActual({ id: null, nombre: '', icono: '' });
     setModoEdicion(false);
   };
 
@@ -146,6 +152,7 @@ const PantallaCategorias = () => {
 
             <form onSubmit={guardarCategoria} className="space-y-4">
               <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Nombre</label>
                 <input 
                   id="input-nombre-cat"
                   type="text" 
@@ -155,6 +162,32 @@ const PantallaCategorias = () => {
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white transition-all outline-none font-semibold"
                   required
                 />
+              </div>
+
+              {/* 4. Nuevo Input para el Ícono */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>Ícono (Material Symbols)</span>
+                  <a href="https://fonts.google.com/icons?icon.set=Material+Symbols" target="_blank" rel="noreferrer" className="text-teal-600 hover:underline text-[10px] normal-case">
+                    Ver íconos
+                  </a>
+                </label>
+                <div className="flex gap-2 items-center">
+                    <input 
+                        type="text" 
+                        value={categoriaActual.icono}
+                        onChange={(e) => setCategoriaActual({...categoriaActual, icono: e.target.value.toLowerCase()})}
+                        placeholder="Ej: fragrance, sanitizer..."
+                        className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white transition-all outline-none"
+                    />
+                    {/* Preview del Ícono en vivo */}
+                    <div className="w-12 h-12 flex-shrink-0 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-xl border border-teal-200 dark:border-teal-800 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl">
+                            {categoriaActual.icono || 'category'}
+                        </span>
+                    </div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Escribí el nombre del ícono en inglés para mostrarlo en la tienda.</p>
               </div>
 
               <div className="pt-2 flex flex-col gap-2">
@@ -171,7 +204,7 @@ const PantallaCategorias = () => {
             </form>
           </div>
 
-          {/* 2. Tarjeta de Subcategorías (SOLO APARECE SI ESTÁS EDITANDO UNA CATEGORÍA) */}
+          {/* 2. Tarjeta de Subcategorías (Igual que antes) */}
           {modoEdicion && (
             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm animate-fade-in">
               <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -179,7 +212,6 @@ const PantallaCategorias = () => {
                 Subcategorías de {categoriaActual.nombre}
               </h3>
               
-              {/* Formulario rápido para agregar subcategoría */}
               <form onSubmit={agregarSubcategoria} className="flex gap-2 mb-4">
                 <input 
                   id="input-subcat"
@@ -194,7 +226,6 @@ const PantallaCategorias = () => {
                 </button>
               </form>
 
-              {/* Lista de las subcategorías actuales */}
               <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {subcategoriasLista.length === 0 ? (
                   <p className="text-xs text-slate-400 italic text-center py-4">No tiene subcategorías aún.</p>
@@ -246,19 +277,23 @@ const PantallaCategorias = () => {
                     categorias.map(cat => (
                       <tr 
                         key={cat.id} 
-                        // Si está editando esta categoría, la pintamos un poquito de color teal
                         className={`transition-colors group ${categoriaActual.id === cat.id ? 'bg-teal-50 dark:bg-teal-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                       >
                         <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-slate-900 dark:text-white">{cat.nombre}</span>
-                            <span className="text-[10px] text-slate-400">ID: #{cat.id}</span>
+                          {/* 5. Agregamos el ícono en la tabla para que el admin lo vea */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                                <span className="material-symbols-outlined text-[20px]">{cat.icono || 'category'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">{cat.nombre}</span>
+                                <span className="text-[10px] text-slate-400">ID: #{cat.id}</span>
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-wrap gap-1">
                             {cat.subcategorias && cat.subcategorias.length > 0 ? (
-                              // Mostramos las primeras 3 subcategorías como "etiquetas" para que se vea re pro
                               cat.subcategorias.slice(0, 3).map(sub => (
                                 <span key={sub.id} className="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                                   {sub.nombre}
@@ -267,7 +302,6 @@ const PantallaCategorias = () => {
                             ) : (
                               <span className="text-xs italic text-slate-400">Sin subcategorías</span>
                             )}
-                            {/* Si tiene más de 3, ponemos un "+X" */}
                             {cat.subcategorias && cat.subcategorias.length > 3 && (
                               <span className="text-[10px] font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
                                 +{cat.subcategorias.length - 3}

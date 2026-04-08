@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../services/api'; 
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 const PantallaCargaStock = () => {
   const navigate = useNavigate();
@@ -9,6 +10,9 @@ const PantallaCargaStock = () => {
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   
+  // Nuevo estado para el escáner de cámara
+  const [escaneando, setEscaneando] = useState(false);
+
   // Estadísticas globales del backend
   const [estadisticas, setEstadisticas] = useState({ total: 0, activos: 0, sinStock: 0 });
 
@@ -35,9 +39,9 @@ const PantallaCargaStock = () => {
     cargarEstadisticas();
   }, []);
 
-  // 2. EFECTO DE BÚSQUEDA (HUMANOS) - Espera 300ms antes de buscar
+  // 2. EFECTO DE BÚSQUEDA (HUMANOS)
   useEffect(() => {
-    if (!busqueda.trim()) {
+    if (!busqueda.trim() || escaneando) {
       setResultadosBusqueda([]);
       return;
     }
@@ -53,35 +57,77 @@ const PantallaCargaStock = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [busqueda]);
+  }, [busqueda, escaneando]);
 
   const handleBuscar = (e) => {
     setBusqueda(e.target.value);
   };
 
-  // 3. BÚSQUEDA RÁPIDA (ESCÁNER DE CÓDIGO DE BARRAS)
-  const buscarConEnter = async (e) => {
+  // 3. BÚSQUEDA RÁPIDA (ENTER O ESCÁNER DE CÁMARA)
+  const buscarPorCodigo = async (codigo) => {
+    try {
+      const res = await fetchConToken(`/productos?todos=true&busqueda=${encodeURIComponent(codigo)}&page=0&size=5`);
+      const data = await res.json();
+      const encontrados = data.content || [];
+      
+      setResultadosBusqueda(encontrados);
+
+      // Si encuentra exactamente 1 producto, lo auto-selecciona
+      if (encontrados.length === 1) {
+        seleccionarProducto(encontrados[0]);
+      } else if (encontrados.length === 0) {
+          alert("No se encontró ningún producto con ese código.");
+      }
+    } catch (error) {
+      console.error("Error en búsqueda rápida:", error);
+    }
+  };
+
+  const buscarConEnter = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!busqueda.trim()) return;
-
-      try {
-        // Buscamos inmediatamente sin esperar el timeout
-        const res = await fetchConToken(`/productos?todos=true&busqueda=${encodeURIComponent(busqueda)}&page=0&size=5`);
-        const data = await res.json();
-        const encontrados = data.content || [];
-        
-        setResultadosBusqueda(encontrados);
-
-        // Si el escáner encontró exactamente 1 producto, lo auto-selecciona
-        if (encontrados.length === 1) {
-          seleccionarProducto(encontrados[0]);
-        }
-      } catch (error) {
-        console.error("Error en búsqueda rápida:", error);
-      }
+      buscarPorCodigo(busqueda);
     }
   };
+
+  // ==========================================
+  // LÓGICA DE LA CÁMARA (Html5QrcodeScanner)
+  // ==========================================
+  useEffect(() => {
+    if (escaneando) {
+      // Configuramos el escáner para que busque principalmente códigos de barra (1D)
+      const scanner = new Html5QrcodeScanner("lector-camara", {
+        fps: 10,
+        qrbox: { width: 300, height: 150 },
+        // 👇 ESTA ES LA MAGIA: Solo lee códigos de productos reales
+        formatsToSupport: [ 
+            Html5QrcodeSupportedFormats.EAN_13, 
+            Html5QrcodeSupportedFormats.UPC_A, 
+            Html5QrcodeSupportedFormats.EAN_8 
+        ]
+      });
+
+      scanner.render(
+        (codigoLeido) => {
+          // ÉXITO: Leyó un código
+          scanner.clear(); // Apagamos la cámara
+          setEscaneando(false); // Cerramos el modal
+          setBusqueda(codigoLeido); // Llenamos el input visualmente
+          buscarPorCodigo(codigoLeido); // Disparamos la búsqueda inmediata
+        },
+        (error) => {
+          // Ignoramos los errores continuos de "código no encontrado en este frame"
+        }
+      );
+
+      // Limpiamos la cámara si el usuario cierra el modal a la fuerza
+      return () => {
+        scanner.clear().catch(err => console.error("Error limpiando cámara", err));
+      };
+    }
+  }, [escaneando]);
+
 
   const seleccionarProducto = (prod) => {
     setProductoSeleccionado(prod);
@@ -146,10 +192,9 @@ const PantallaCargaStock = () => {
         setProductoSeleccionado(productoActualizadoLocal);
         setFormStock({ ...formStock, ingreso: 0 }); 
         
-        // Recargamos las estadísticas globales por si este producto salió de "Sin Stock"
         cargarEstadisticas();
 
-        // Volvemos a enfocar el buscador por si quiere escanear otro
+        // Volvemos a enfocar el buscador
         setTimeout(() => document.getElementById('input-buscador')?.focus(), 100);
       } else {
         alert("Hubo un error al procesar el ingreso de stock.");
@@ -160,16 +205,39 @@ const PantallaCargaStock = () => {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto w-full font-sans">
+    <div className="p-8 max-w-6xl mx-auto w-full font-sans relative">
       
+      {/* MODAL DEL ESCÁNER DE CÁMARA */}
+      {escaneando && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
+                <div className="flex justify-between items-center mb-4 px-2">
+                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className="material-symbols-outlined text-teal-600">barcode_scanner</span>
+                        Escanear Código
+                    </h3>
+                    <button onClick={() => setEscaneando(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                
+                {/* DIV DONDE SE RENDERIZA LA CÁMARA */}
+                <div id="lector-camara" className="w-full rounded-xl overflow-hidden border-2 border-teal-500/30 bg-black"></div>
+                
+                <p className="text-xs text-center text-slate-500 mt-4">Enfoque el código de barras dentro del recuadro.</p>
+            </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Carga Rápida de Stock</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Busque un producto para actualizar su inventario y precios.</p>
         </div>
         
-        <div className="flex-1 max-w-xl relative">
-          <div className="relative">
+        <div className="flex-1 max-w-xl relative flex gap-2">
+          {/* BUSCADOR */}
+          <div className="relative flex-1">
             <span className="material-symbols-outlined absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-lg">search</span>
             <input 
               id="input-buscador"
@@ -183,7 +251,17 @@ const PantallaCargaStock = () => {
             />
           </div>
 
-          {resultadosBusqueda.length > 0 && (
+          {/* BOTÓN PARA ABRIR CÁMARA */}
+          <button 
+            onClick={() => setEscaneando(true)}
+            className="flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-4 transition-colors shadow-sm"
+            title="Escanear con cámara"
+          >
+            <span className="material-symbols-outlined">qr_code_scanner</span>
+          </button>
+
+          {/* RESULTADOS DE BÚSQUEDA TEXTUAL */}
+          {resultadosBusqueda.length > 0 && !escaneando && (
             <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 max-h-60 overflow-y-auto">
               {resultadosBusqueda.map(prod => (
                 <button 
@@ -205,11 +283,12 @@ const PantallaCargaStock = () => {
         </div>
       </div>
 
+      {/* RESTO DE LA INTERFAZ ORIGINAL (Igual que antes) */}
       {!productoSeleccionado ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
           <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">inventory_2</span>
           <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Esperando producto...</h2>
-          <p className="text-slate-500 mt-2 max-w-md">Use la barra de búsqueda superior o escanee el código de barras del producto.</p>
+          <p className="text-slate-500 mt-2 max-w-md">Use la barra de búsqueda, el lector USB, o escanee el código con la cámara.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in">

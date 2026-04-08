@@ -123,6 +123,15 @@ const Sidebar = () => {
             <span className="text-sm">Estadísticas</span>
           </NavLink>
 
+          <NavLink 
+              to="/banner" 
+              onClick={() => setAbierto(false)} 
+              className={({ isActive }) => isActive ? "flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary transition-colors font-bold" : "flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"}
+          >
+              <span className="material-symbols-outlined">view_carousel</span>
+              <span className="text-sm">Banner y Portada</span>
+          </NavLink>
+
         </nav>
 
         {/* Usuario abajo de todo con la confirmación */}
